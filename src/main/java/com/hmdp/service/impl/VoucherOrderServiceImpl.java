@@ -9,6 +9,7 @@ import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private RedisIdWorker redisIdWorker;
 
     @Override
-    @Transactional
     public Result seckillVoucher(Long voucherId) {
 
         //1.查询优惠券信息
@@ -54,15 +54,20 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             //否，返回异常结果
             return Result.fail("库存不足！");
         }
+        Long userId = UserHolder.getUser().getId();
 
-        return createVoucherOrder(voucherId);
+        synchronized (userId.toString().intern()) {
+            //获取代理对象（事务）
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId);
+        }
     }
 
     @Transactional
-    public synchronized Result createVoucherOrder(Long voucherId) {
+    public Result createVoucherOrder(Long voucherId) {
         //一人一单
         Long userId = UserHolder.getUser().getId();
-        synchronized (userId.toString()) {
+
             //查询订单是否存在
             Integer count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
             //订单是否存在
@@ -92,6 +97,5 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             //7.返回订单id
             return Result.ok(orderId);
 
-        }
     }
 }
