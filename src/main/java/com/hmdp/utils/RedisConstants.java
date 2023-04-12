@@ -14,4 +14,5 @@ public class RedisConstants {
     public static final String CACHE_SHOP_TYPE_KEY = "cache:shop:type:list";
 
     public static final String SECKILL_STOCK_KEY = "seckill:stock:";
+    public static final String BLOG_LIKES_KEY = "blog:liked:";
 }
